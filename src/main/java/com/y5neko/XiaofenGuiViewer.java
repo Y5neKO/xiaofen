@@ -8,6 +8,8 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.stream.Collectors;
 import com.alibaba.fastjson2.*;
 
@@ -46,9 +48,9 @@ public class XiaofenGuiViewer extends JFrame {
 
         gbc.gridy = 1;
         gbc.gridx = 0;
-        topPanel.add(new JLabel("grassclassify_id:"), gbc);
+        topPanel.add(new JLabel("圈子id:"), gbc);
         gbc.gridx++;
-        classifyField = new JTextField("159", 10);
+        classifyField = new JTextField("", 10);
         topPanel.add(classifyField, gbc);
         gbc.gridx += 2;
         JButton fetchBtn = new JButton("获取数据");
@@ -365,6 +367,40 @@ public class XiaofenGuiViewer extends JFrame {
         return layeredPane;
     }
 
+//    private void openImagePreviewDialog(String imageUrl) {
+//        JDialog dialog = new JDialog(this, "图片预览", true);
+//        try {
+//            ImageIcon icon = new ImageIcon(new URL(imageUrl));
+//            Image rawImg = icon.getImage();
+//
+//            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+//            int maxW = screenSize.width - 100;
+//            int maxH = screenSize.height - 100;
+//
+//            int w = rawImg.getWidth(null);
+//            int h = rawImg.getHeight(null);
+//
+//            float ratio = Math.min((float) maxW / w, (float) maxH / h);
+//            if (ratio > 1) ratio = 1f; // 不放大
+//
+//            int displayW = (int) (w * ratio);
+//            int displayH = (int) (h * ratio);
+//
+//            Image scaled = rawImg.getScaledInstance(displayW, displayH, Image.SCALE_SMOOTH);
+//            JLabel label = new JLabel(new ImageIcon(scaled));
+//
+//            JScrollPane scrollPane = new JScrollPane(label);
+//            scrollPane.setPreferredSize(new Dimension(displayW, displayH));
+//
+//            dialog.getContentPane().add(scrollPane);
+//            dialog.pack();
+//            dialog.setLocationRelativeTo(this);
+//            dialog.setVisible(true);
+//        } catch (Exception e) {
+//            JOptionPane.showMessageDialog(this, "无法加载图片：" + e.getMessage());
+//        }
+//    }
+
     private void openImagePreviewDialog(String imageUrl) {
         JDialog dialog = new JDialog(this, "图片预览", true);
         try {
@@ -379,7 +415,7 @@ public class XiaofenGuiViewer extends JFrame {
             int h = rawImg.getHeight(null);
 
             float ratio = Math.min((float) maxW / w, (float) maxH / h);
-            if (ratio > 1) ratio = 1f; // 不放大
+            if (ratio > 1) ratio = 1f;
 
             int displayW = (int) (w * ratio);
             int displayH = (int) (h * ratio);
@@ -390,7 +426,17 @@ public class XiaofenGuiViewer extends JFrame {
             JScrollPane scrollPane = new JScrollPane(label);
             scrollPane.setPreferredSize(new Dimension(displayW, displayH));
 
-            dialog.getContentPane().add(scrollPane);
+            // 👉 新增按钮面板
+            JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+            JButton openInBrowserBtn = new JButton("在浏览器中打开");
+            openInBrowserBtn.addActionListener(e -> openInBrowser(imageUrl));
+            btnPanel.add(openInBrowserBtn);
+
+            JPanel wrapper = new JPanel(new BorderLayout());
+            wrapper.add(scrollPane, BorderLayout.CENTER);
+            wrapper.add(btnPanel, BorderLayout.SOUTH);
+
+            dialog.getContentPane().add(wrapper);
             dialog.pack();
             dialog.setLocationRelativeTo(this);
             dialog.setVisible(true);
@@ -398,6 +444,7 @@ public class XiaofenGuiViewer extends JFrame {
             JOptionPane.showMessageDialog(this, "无法加载图片：" + e.getMessage());
         }
     }
+
 
     private void openInBrowser(String url) {
         try {
@@ -450,6 +497,10 @@ public class XiaofenGuiViewer extends JFrame {
 
 
     public static void main(String[] args) {
+        if (!Files.exists(Paths.get(ConfigUtil.rootPath))) {
+            File dir = new File(ConfigUtil.rootPath);
+            dir.mkdir();
+        }
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}

@@ -9,7 +9,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 public class ConfigUtil {
-    private static final File CONFIG_FILE = new File("config.json");
+    static final String rootPath = System.getProperty("user.home") + "/.xfqconfig/";
+    static final File CONFIG_FILE = new File(rootPath + "config.json");
 
     public static void saveToken(String token, String username, String password) {
         JSONObject obj = new JSONObject();
