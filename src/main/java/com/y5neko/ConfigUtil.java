@@ -56,4 +56,30 @@ public class ConfigUtil {
             return null;
         }
     }
+
+    public static void saveID(String grassclassify_id) {
+        if(!CONFIG_FILE.exists()) return;
+        try (FileReader reader = new FileReader(CONFIG_FILE)) {
+            JSONObject obj = JSON.parseObject(reader,JSONObject.class);
+            obj.put("grassclassify_id", grassclassify_id);
+            try (FileWriter writer = new FileWriter(CONFIG_FILE)) {
+                writer.write(obj.toJSONString());
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String loadID() {
+        if (!CONFIG_FILE.exists()) return null;
+        try (FileReader reader = new FileReader(CONFIG_FILE)) {
+            JSONObject obj = JSON.parseObject(reader, JSONObject.class);
+            return obj.getString("grassclassify_id");
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 }

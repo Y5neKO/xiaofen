@@ -50,7 +50,7 @@ public class XiaofenGuiViewer extends JFrame {
         gbc.gridx = 0;
         topPanel.add(new JLabel("圈子id:"), gbc);
         gbc.gridx++;
-        classifyField = new JTextField("", 10);
+        classifyField = new JTextField(ConfigUtil.loadID(), 10);
         topPanel.add(classifyField, gbc);
         gbc.gridx += 2;
         JButton fetchBtn = new JButton("获取数据");
@@ -79,6 +79,7 @@ public class XiaofenGuiViewer extends JFrame {
     }
 
     private void startFetch(ActionEvent e) {
+        ConfigUtil.saveID(classifyField.getText().trim());
         currentPage = 1;
         totalPage = 1;
         contentPanel.removeAll();
