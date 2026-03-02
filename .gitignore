@@ -38,3 +38,6 @@ build/
 .DS_Store
 
 target
+
+.serena/
+.spec-workflow/

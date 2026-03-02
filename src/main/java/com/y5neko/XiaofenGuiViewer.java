@@ -151,7 +151,9 @@ public class XiaofenGuiViewer extends JFrame {
                 for (int i = 0; i < items.size(); i++) {
                     JSONObject item = items.getJSONObject(i);
 
+                    // 使用垂直布局（BoxLayout.Y_AXIS），让每个元素独占一行
                     JPanel itemPanel = new JPanel();
+                    itemPanel.setLayout(new BoxLayout(itemPanel, BoxLayout.Y_AXIS));
 
                     itemPanel.setBorder(BorderFactory.createCompoundBorder(
                             BorderFactory.createMatteBorder(1, 1, 4, 1, new Color(180, 180, 180)),
@@ -168,13 +170,22 @@ public class XiaofenGuiViewer extends JFrame {
                         introduce = "无内容";
                     }
 
+                    // 标题标签 - 第一行
                     JLabel titleLabel = new JLabel("<html><b>" + title + "</b></html>");
+                    titleLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    
+                    // 描述标签 - 第二行
                     JLabel introLabel = new JLabel("<html>" + introduce + "</html>");
+                    introLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    
+                    // 媒体面板 - 第三行
                     JPanel mediaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+                    mediaPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    mediaPanel.setBackground(new Color(250, 250, 250));
 
                     String video = item.getString("video");
                     if (video != null && !video.isEmpty()) {
-                        // 先显示“视频预览生成中...”
+                        // 先显示"视频预览生成中..."
                         JLabel loadingLabel = new JLabel("视频预览生成中...");
                         mediaPanel.add(loadingLabel);
 
@@ -224,10 +235,15 @@ public class XiaofenGuiViewer extends JFrame {
                         }
                     }
 
+                    // 按顺序添加组件（垂直排列）
                     itemPanel.add(titleLabel);
+                    itemPanel.add(Box.createVerticalStrut(5)); // 添加垂直间距
                     itemPanel.add(introLabel);
+                    itemPanel.add(Box.createVerticalStrut(5)); // 添加垂直间距
                     itemPanel.add(mediaPanel);
+                    
                     contentPanel.add(itemPanel);
+                    contentPanel.add(Box.createVerticalStrut(10)); // 列表项之间的间距
                 }
 
                 // 移除旧按钮，避免按钮重复
