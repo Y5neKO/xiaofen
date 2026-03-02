@@ -76,6 +76,75 @@ public class XiaofenGuiViewer extends JFrame {
         mainPanel.add(scrollPane, BorderLayout.CENTER);
 
         setContentPane(mainPanel);
+
+        // 添加窗口大小变化监听器，实现自适应布局
+        this.addComponentListener(new java.awt.event.ComponentAdapter() {
+            public void componentResized(java.awt.event.ComponentEvent evt) {
+                // 窗口大小改变时，重新计算所有帖子项的布局
+                SwingUtilities.invokeLater(() -> {
+                    updateLayoutOnResize();
+                });
+            }
+        });
+    }
+
+
+    /**
+     * 窗口大小变化时更新布局
+     * 遍历所有帖子项，重新计算标题和描述的宽度，触发媒体面板重新布局
+     */
+    private void updateLayoutOnResize() {
+        // 获取滚动面板的视口宽度
+        Container parent = contentPanel.getParent();
+        int containerWidth = 850;
+        if (parent instanceof JViewport) {
+            containerWidth = ((JViewport) parent).getWidth();
+        } else if (contentPanel.getWidth() > 0) {
+            containerWidth = contentPanel.getWidth();
+        }
+        
+        if (containerWidth <= 0) {
+            return;
+        }
+
+        // 遍历所有帖子项
+        for (java.awt.Component comp : contentPanel.getComponents()) {
+            if (comp instanceof JPanel) {
+                JPanel itemPanel = (JPanel) comp;
+                
+                // 更新 itemPanel 的最大宽度
+                itemPanel.setMaximumSize(new Dimension(containerWidth, Integer.MAX_VALUE));
+                
+                // 遍历帖子项中的组件
+                for (java.awt.Component innerComp : itemPanel.getComponents()) {
+                    // 更新标题和描述标签的宽度
+                    if (innerComp instanceof JLabel) {
+                        JLabel label = (JLabel) innerComp;
+                        String text = label.getText();
+                        if (text != null && text.startsWith("<html>")) {
+                            // 更新 HTML div 的宽度
+                            String newText = text.replaceAll("width:\\d+px", "width:" + (containerWidth - 40) + "px");
+                            label.setText(newText);
+                            label.setMaximumSize(new Dimension(containerWidth - 20, Integer.MAX_VALUE));
+                        }
+                    }
+                    // 触发媒体面板重新布局
+                    else if (innerComp instanceof JPanel) {
+                        JPanel mediaPanel = (JPanel) innerComp;
+                        // 更新媒体面板的最大宽度
+                        mediaPanel.setMaximumSize(new Dimension(containerWidth - 20, Integer.MAX_VALUE));
+                        mediaPanel.revalidate();
+                        mediaPanel.repaint();
+                    }
+                }
+                
+                itemPanel.revalidate();
+                itemPanel.repaint();
+            }
+        }
+        
+        contentPanel.revalidate();
+        contentPanel.repaint();
     }
 
     private void startFetch(ActionEvent e) {
@@ -148,6 +217,15 @@ public class XiaofenGuiViewer extends JFrame {
                 int total = dataObj.getIntValue("total");
                 totalPage = (int) Math.ceil(total / 10.0);
 
+                // 获取滚动面板的视口宽度（更准确的容器宽度）
+                Container parent = contentPanel.getParent();
+                int containerWidth = 850; // 默认宽度
+                if (parent instanceof JViewport) {
+                    containerWidth = ((JViewport) parent).getWidth();
+                } else if (contentPanel.getWidth() > 0) {
+                    containerWidth = contentPanel.getWidth();
+                }
+
                 for (int i = 0; i < items.size(); i++) {
                     JSONObject item = items.getJSONObject(i);
 
@@ -160,6 +238,9 @@ public class XiaofenGuiViewer extends JFrame {
                             new EmptyBorder(10, 10, 10, 10)
                     ));
                     itemPanel.setBackground(new Color(250, 250, 250));
+                    
+                    // 关键：限制 itemPanel 的最大宽度，防止超出容器
+                    itemPanel.setMaximumSize(new Dimension(containerWidth, Integer.MAX_VALUE));
 
                     String title = item.getString("title");
                     String introduce = item.getString("introduce");
@@ -170,18 +251,22 @@ public class XiaofenGuiViewer extends JFrame {
                         introduce = "无内容";
                     }
 
-                    // 标题标签 - 第一行
-                    JLabel titleLabel = new JLabel("<html><b>" + title + "</b></html>");
+                    // 标题标签 - 第一行（限制宽度以支持换行）
+                    JLabel titleLabel = new JLabel("<html><div style='width:" + (containerWidth - 40) + "px; word-wrap: break-word;'><b>" + title + "</b></div></html>");
                     titleLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    titleLabel.setMaximumSize(new Dimension(containerWidth - 20, Integer.MAX_VALUE));
                     
-                    // 描述标签 - 第二行
-                    JLabel introLabel = new JLabel("<html>" + introduce + "</html>");
+                    // 描述标签 - 第二行（限制宽度以支持换行）
+                    JLabel introLabel = new JLabel("<html><div style='width:" + (containerWidth - 40) + "px; word-wrap: break-word;'>" + introduce + "</div></html>");
                     introLabel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    introLabel.setMaximumSize(new Dimension(containerWidth - 20, Integer.MAX_VALUE));
                     
-                    // 媒体面板 - 第三行
-                    JPanel mediaPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-                    mediaPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    // 媒体面板 - 第三行（使用自定义 WrapLayout 支持自动换行）
+                    JPanel mediaPanel = new JPanel(new WrapLayout(FlowLayout.LEFT, 5, 5));
                     mediaPanel.setBackground(new Color(250, 250, 250));
+                    mediaPanel.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    // 关键：限制媒体面板的最大宽度，使其能够自动换行
+                    mediaPanel.setMaximumSize(new Dimension(containerWidth - 20, Integer.MAX_VALUE));
 
                     String video = item.getString("video");
                     if (video != null && !video.isEmpty()) {
@@ -224,6 +309,9 @@ public class XiaofenGuiViewer extends JFrame {
                                                     openImagePreviewDialog(imgUrl);
                                                 }
                                             });
+                                            // 图片加载后重新计算布局
+                                            mediaPanel.revalidate();
+                                            mediaPanel.repaint();
                                         });
                                     } catch (Exception e) {
                                         SwingUtilities.invokeLater(() -> {
@@ -254,6 +342,8 @@ public class XiaofenGuiViewer extends JFrame {
                 // 如果还有下一页，显示加载更多按钮
                 if (currentPage < totalPage) {
                     loadMoreBtn = new JButton("加载更多");
+                    loadMoreBtn.setAlignmentX(java.awt.Component.LEFT_ALIGNMENT);
+                    loadMoreBtn.setMaximumSize(new Dimension(150, 30));
                     loadMoreBtn.addActionListener(ev -> {
                         currentPage++;
                         fetchData(currentPage);
@@ -522,5 +612,122 @@ public class XiaofenGuiViewer extends JFrame {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
         SwingUtilities.invokeLater(() -> new XiaofenGuiViewer().setVisible(true));
+    }
+
+
+    /**
+     * 自定义换行布局管理器
+     * 扩展 FlowLayout，支持在指定宽度时自动换行
+     */
+    private static class WrapLayout extends FlowLayout {
+        
+        public WrapLayout(int align, int hgap, int vgap) {
+            super(align, hgap, vgap);
+        }
+        
+        @Override
+        public Dimension preferredLayoutSize(Container target) {
+            return layoutSize(target, true);
+        }
+
+        @Override
+        public Dimension minimumLayoutSize(Container target) {
+            return layoutSize(target, false);
+        }
+
+        @Override
+        public void layoutContainer(Container target) {
+            synchronized (target.getTreeLock()) {
+                Insets insets = target.getInsets();
+                int maxWidth = target.getWidth() - insets.left - insets.right - getHgap() * 2;
+                
+                int nmembers = target.getComponentCount();
+                int x = insets.left + getHgap();
+                int y = insets.top + getVgap();
+                int rowHeight = 0;
+                
+                for (int i = 0; i < nmembers; i++) {
+                    Component m = target.getComponent(i);
+                    if (m.isVisible()) {
+                        Dimension d = m.getPreferredSize();
+                        
+                        // 检查是否需要换行
+                        if (x + d.width > maxWidth + insets.left + getHgap() && x > insets.left + getHgap()) {
+                            // 换行
+                            y += rowHeight + getVgap();
+                            x = insets.left + getHgap();
+                            rowHeight = 0;
+                        }
+                        
+                        m.setBounds(x, y, d.width, d.height);
+                        x += d.width + getHgap();
+                        rowHeight = Math.max(rowHeight, d.height);
+                    }
+                }
+            }
+        }
+
+        private Dimension layoutSize(Container target, boolean preferred) {
+            synchronized (target.getTreeLock()) {
+                // 获取目标容器或其父容器的宽度
+                int targetWidth = target.getWidth();
+                
+                // 如果容器宽度为0（初始状态），尝试获取父容器的宽度
+                if (targetWidth <= 0) {
+                    Container parent = target.getParent();
+                    if (parent != null) {
+                        targetWidth = parent.getWidth();
+                        if (parent.getInsets() != null) {
+                            targetWidth -= parent.getInsets().left + parent.getInsets().right;
+                        }
+                    }
+                    if (targetWidth <= 0) {
+                        targetWidth = 800; // 最终默认值
+                    }
+                }
+
+                Insets insets = target.getInsets();
+                int maxWidth = targetWidth - insets.left - insets.right - getHgap() * 2;
+                if (maxWidth <= 0) {
+                    maxWidth = targetWidth - 40;
+                }
+
+                Dimension dim = new Dimension(0, 0);
+                int rowWidth = 0;
+                int rowHeight = 0;
+
+                int nmembers = target.getComponentCount();
+                for (int i = 0; i < nmembers; i++) {
+                    Component m = target.getComponent(i);
+                    if (m.isVisible()) {
+                        Dimension d = preferred ? m.getPreferredSize() : m.getMinimumSize();
+                        
+                        // 如果当前行放不下这个组件且不是行首，换行
+                        if (rowWidth + d.width > maxWidth && rowWidth > 0) {
+                            dim.width = Math.max(dim.width, rowWidth);
+                            dim.height += rowHeight + getVgap();
+                            rowWidth = 0;
+                            rowHeight = 0;
+                        }
+
+                        // 如果不是行首，添加水平间距
+                        if (rowWidth > 0) {
+                            rowWidth += getHgap();
+                        }
+
+                        rowWidth += d.width;
+                        rowHeight = Math.max(rowHeight, d.height);
+                    }
+                }
+
+                dim.width = Math.max(dim.width, rowWidth);
+                dim.height += rowHeight;
+
+                dim.width += insets.left + insets.right + getHgap() * 2;
+                dim.height += insets.top + insets.bottom + getVgap() * 2;
+
+                return dim;
+            }
+        }
     }
 }
